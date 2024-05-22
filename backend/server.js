@@ -11,8 +11,10 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 import authRoutes from "./routes/auth.route.js";
+import tableRoutes from "./routes/table.route.js";
 
 app.use("/api/auth", authRoutes);
+app.use("/api/table", tableRoutes);
 
 app.listen(PORT, () => {
     connectToMongoDB();
