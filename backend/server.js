@@ -12,9 +12,11 @@ app.use(express.json());
 
 import authRoutes from "./routes/auth.route.js";
 import tableRoutes from "./routes/table.route.js";
+import userRoutes from "./routes/user.route.js";
 
 app.use("/api/auth", authRoutes);
 app.use("/api/table", tableRoutes);
+app.use("/api/user", userRoutes);
 
 app.listen(PORT, () => {
     connectToMongoDB();
