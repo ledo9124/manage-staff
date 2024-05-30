@@ -1,3 +1,6 @@
+import User from "../models/user.model.js";
+import Table from "../models/table.model.js";
+
 const timeoutManager = {}; // {name : [...timeoutId]}
 
 // Thêm một timeout vào đối tượng
@@ -35,7 +38,7 @@ const userOnlines = [];
 const tablesOpen = [];
 
 // Tìm ra nhân viên có thể thay thế
-const userNeedChange = () => {
+const userNeedChange = (currTable = null, currStaff = null) => {
     return new Promise((resolve, reject) => {
         if (!userOnlines.length) {
             return reject({ error: "There are no employees online!" });
@@ -56,13 +59,24 @@ const userNeedChange = () => {
                         if (!obRest) {
                             obRest = item;
                         } else {
-                            let dateObRest = new Date(obRest.timeRest);
-                            let dateItem = new Date(item.timeRest);
+                            const dateObRest = new Date(obRest.timeRest);
+                            const dateItem = new Date(item.timeRest);
                             if (dateObRest > dateItem) {
                                 obRest = item;
                             }
                         }
                     }
+                }
+                const currentTime = new Date();
+                const timeRested = currentTime - obRest.timeRest;
+                const timeNeedRest = 15 * 60 * 1000; //MS
+                if (timeRested < timeNeedRest) {
+                    addTimeout(
+                        currTable._id,
+                        processChangeStaff(currTable, currStaff),
+                        timeNeedRest - timeRested
+                    );
+                    return resolve(null);
                 }
                 resolve(obRest);
             })
@@ -145,19 +159,18 @@ export const openTable = async (req, res) => {
     }
 };
 
-const processChangeStaff = async (currTable, currStaff) => {
+const processChangeStaff = async (currTable = null, currStaff = null) => {
     if (currTable._id !== tablesOpen[0]) {
-        
+        currTable = await Table.findById(tablesOpen[0]);
+        console.log(currTable);
+        currStaff = await User.findById(currTable.userId);
     }
 
-    const user = await userNeedChange();
+    const user = await userNeedChange(currTable, currStaff);
 
     if (user) {
         issetStaff(currTable, currStaff, user);
-        return;
     }
-
-    notIssetStaff(currTable, currStaff);
 };
 
 const issetStaff = async (currTable, currStaff, newStaff) => {
@@ -229,8 +242,4 @@ const issetStaff = async (currTable, currStaff, newStaff) => {
         console.error("Error updating user:", err);
         return res.json({ error: "Error updating user." });
     }
-};
-
-const notIssetStaff = async (currTable, currStaff) => {
-
 };
