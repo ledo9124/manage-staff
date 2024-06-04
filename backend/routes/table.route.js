@@ -9,6 +9,6 @@ router.post("/create", createTable);
 
 // Division handle table
 
-router.post("/openTable", openTable);
+router.post("/openTable/:id", openTable);
 
 export default router;
