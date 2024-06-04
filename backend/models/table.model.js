@@ -14,8 +14,9 @@ const tableSchema = new mongoose.Schema({
         default: "0",
     },
     userId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         default: "0",
+        ref: "User",
     },
     userIdNext: {
         type: String,
@@ -23,6 +24,6 @@ const tableSchema = new mongoose.Schema({
     },
 });
 
-const Table = mongoose.model("Table" , tableSchema);
+const Table = mongoose.model("Table", tableSchema);
 
 export default Table;
