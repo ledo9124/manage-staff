@@ -9,11 +9,12 @@ function addTimeout(name, callback, delay) {
         callback();
         timeoutManager[name].shift(); // Xóa timeout sau khi thực thi
     }, delay);
-    if (timeoutManager[name].length == 0) {
+    if (!timeoutManager[name]) {
         timeoutManager[name] = [timeoutId];
         return;
     }
     timeoutManager[name].push(timeoutId);
+    console.log(timeoutManager , callback);
 }
 
 // Hủy bỏ một timeout cụ thể
@@ -34,7 +35,7 @@ function clearTimeoutByName(name) {
 //   }
 // }
 
-const userOnlines = [];
+const userOnlines = ["664c90e2fc6fe43e66482828", "664c9188fc6fe43e6648282b" , "6656e443d367b2c07cb92026"];
 const tablesOpen = [];
 
 // Tìm ra nhân viên có thể thay thế
@@ -67,16 +68,23 @@ const userNeedChange = (currTable = null, currStaff = null) => {
                         }
                     }
                 }
-                const currentTime = new Date();
-                const timeRested = currentTime - obRest.timeRest;
-                const timeNeedRest = 15 * 60 * 1000; //MS
-                if (timeRested < timeNeedRest) {
-                    addTimeout(
-                        currTable._id,
-                        processChangeStaff(currTable, currStaff),
-                        timeNeedRest - timeRested
-                    );
-                    return resolve(null);
+
+                if (obRest) {
+                    const currentTime = new Date();
+                    const dateObRest = new Date(obRest.timeRest);
+                    const timeRested = currentTime - dateObRest;
+                    const timeNeedRest = 15 * 1000; //MS
+                    console.log(timeRested);
+                    if (timeRested < timeNeedRest) {
+                        console.log(timeNeedRest - timeRested);
+
+                        addTimeout(
+                            currTable._id,
+                            () => processChangeStaff(currTable, currStaff),
+                            timeNeedRest - timeRested
+                        );
+                        return resolve(null);
+                    }
                 }
                 resolve(obRest);
             })
@@ -135,12 +143,12 @@ export const openTable = async (req, res) => {
                 };
 
                 const updatedTable = await updateTable(tableId, dataTable);
-                tablesOpen.push(updatedTable._id);
+                tablesOpen.push(String(updatedTable._id));
                 console.log("Table updated successfully:", updatedTable);
 
                 addTimeout(
                     tableId,
-                    processChangeStaff(updatedTable, updatedUser),
+                    () => processChangeStaff(updatedTable, updatedUser),
                     35000
                 );
 
@@ -160,13 +168,15 @@ export const openTable = async (req, res) => {
 };
 
 const processChangeStaff = async (currTable = null, currStaff = null) => {
-    if (currTable._id !== tablesOpen[0]) {
+    if (String(currTable._id) !== tablesOpen[0]) {
         currTable = await Table.findById(tablesOpen[0]);
-        console.log(currTable);
         currStaff = await User.findById(currTable.userId);
+        console.log("dao day" , tablesOpen[0] , currTable._id);
     }
 
     const user = await userNeedChange(currTable, currStaff);
+    console.log("user se change" , user);
+    console.log(timeoutManager);
 
     if (user) {
         issetStaff(currTable, currStaff, user);
@@ -174,10 +184,8 @@ const processChangeStaff = async (currTable = null, currStaff = null) => {
 };
 
 const issetStaff = async (currTable, currStaff, newStaff) => {
-    const currentTime = new Date();
-
     let dataUser = {
-        countWork: 1,
+        special: "0",
         timeRest: "0",
     };
 
@@ -193,53 +201,49 @@ const issetStaff = async (currTable, currStaff, newStaff) => {
 
             addTimeout(
                 currTable._id,
-                async (currTable, currStaff, newStaff) => {
-                    let dataTable = {
-                        userId: newStaff._id,
-                        userIdNext: "0",
-                    };
-
-                    try {
-                        const updatedTable = await updateTable(
-                            currTable._id,
-                            dataTable
-                        );
-                        console.log(
-                            "Table updated successfully:",
-                            updatedTable
-                        );
-
-                        await updateUser(currStaff._id, {
-                            timeRest: currentTime,
-                            timeWork: "0",
-                        });
-
-                        const updatedNewStaff = await updateUser(newStaff._id, {
-                            timeRest: "0",
-                            timeWork: currentTime,
-                        });
-
-                        const table = tablesOpen.shift();
-                        tablesOpen.push(table); // thay đổi vị trí của bàn đã được đổi nhân viên
-
-                        addTimeout(
-                            currTable._id,
-                            processChangeStaff(currTable, updatedNewStaff),
-                            35000
-                        );
-                    } catch (error) {
-                        console.error("Error updating table:", err);
-                        return res.json({ error: "Error updating table." });
-                    }
-                },
+                () => handleChangeStaff(currTable, currStaff, newStaff),
                 5000
             ); // Thực thi đổi nhân viên cho bàn.
         } catch (error) {
-            console.error("Error updating table:", err);
-            return res.json({ error: "Error updating table." });
+            console.error("Error updating table:", error);
         }
     } catch (error) {
-        console.error("Error updating user:", err);
-        return res.json({ error: "Error updating user." });
+        console.error("Error updating user:", error);
     }
 };
+
+const handleChangeStaff = async (currTable, currStaff, newStaff) => {
+    const currentTime = new Date();
+
+    let dataTable = {
+        userId: newStaff._id,
+        userIdNext: "0",
+    };
+
+    try {
+        const updatedTable = await updateTable(currTable._id, dataTable);
+        console.log("Table updated successfully:", updatedTable);
+
+        await updateUser(currStaff._id, {
+            timeRest: currentTime,
+            timeWork: "0",
+        });
+
+        const updatedNewStaff = await updateUser(newStaff._id, {
+            timeRest: "0",
+            timeWork: currentTime,
+        });
+
+        const table = tablesOpen.shift();
+        tablesOpen.push(table); // thay đổi vị trí của bàn đã được đổi nhân viên
+
+        addTimeout(
+            currTable._id,
+            () => processChangeStaff(currTable, updatedNewStaff),
+            35000
+        );
+    } catch (error) {
+        console.error("Error updating table:", error);
+    }
+};
+
