@@ -1,8 +1,9 @@
 import Table from "../models/table.model.js";
+import userId from '../models/user.model.js'
 
 export const getTables = async (req, res) => {
     try {
-        const tables = await Table.find({});
+        const tables = await Table.find().populate('userId');
 
         if (!tables) {
             res.status(200).json({});
