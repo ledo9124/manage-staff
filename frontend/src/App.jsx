@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import Register from "./pages/register/Register";
 import Message from "./pages/user/message/Message";
 import Table from "./pages/admin/Tables/Table";
+import Staff from "./pages/admin/Staffs/Staff";
 function App() {
 	const [pageTitle, setPageTitle] = useState('Home');
 
@@ -14,7 +15,9 @@ function App() {
 		{ path: '', title: 'Home' },
 		{ path: '/login', title: 'Login' },
 		{ path: '/register', title: 'Register' },
-		{ path: '/admin/table', title: 'Table List' }
+		{ path: '/admin/table', title: 'Table List' },
+		{ path: '/admin/staff', title: 'Staff List' }
+
 	]
 	let curLoc = useLocation();
 	useEffect(() => {
@@ -40,7 +43,7 @@ function App() {
 					{/* <Route path='/login' element={authUser ? <Navigate to='/' /> : <Login />} /> */}
 					<Route path='/admin/register' element={<Register />} />
 					<Route path='/admin/table' element={<Table />} />
-
+					<Route path='/admin/staff' element={<Staff />} />
 				</Route>
 			</Routes >
 			<Toaster />
