@@ -25,10 +25,10 @@ const TableOne = ({ table }) => {
                             alt=""
                         />
                         <div className="ml-3">
-                            <p className="text-base font-semibold text-gray-800 truncate">
+                            <p className="text-base font-semibold text-gray-800 truncate text-[12px] lg:text-md">
                                 {table.userId !== undefined ? table.userId.fullName : "Empty Table"}
                             </p>
-                            <p className="text-base text-gray-500 truncate">
+                            <p className="text-base text-gray-500 truncate text-[12px] lg:text-md">
                                 Staff
                             </p>
                         </div>
