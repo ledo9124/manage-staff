@@ -1,6 +1,5 @@
 import User from "../models/user.model.js";
 
-
 export const getAllStaffs = async (req, res) => {
     try {
         const allStaffs = await User.find({ role: "1" }).select("-password");

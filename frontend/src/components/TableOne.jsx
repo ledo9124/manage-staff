@@ -35,7 +35,7 @@ const TableOne = ({ table }) => {
                     </div>
                 </div>
                 <div className="mt-8 grid grid-cols-2 gap-2">
-                    <button className="btn btn-warning text-white">
+                    <button className="btn btn-warning text-white p-1 sm:p-2">
                         <StopWatch />
                     </button>
                     <button className="btn btn-success text-white">Open</button>
