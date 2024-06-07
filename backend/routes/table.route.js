@@ -1,6 +1,6 @@
 import express from "express";
 import { createTable, getTables } from "../controllers/table.controller.js";
-import { openTable } from "../controllers/handleTable.controller.js";
+import { closeTable, openTable } from "../controllers/handleTable.controller.js";
 
 const router = express.Router();
 
@@ -9,6 +9,7 @@ router.post("/create", createTable);
 
 // Division handle table
 
-router.post("/openTable/:id", openTable);
+router.get("/openTable/:id", openTable);
+router.get("/closeTable/:id", closeTable);
 
 export default router;

@@ -14,7 +14,6 @@ function addTimeout(name, callback, delay) {
         return;
     }
     timeoutManager[name].push(timeoutId);
-    console.log(timeoutManager , callback);
 }
 
 // Hủy bỏ một timeout cụ thể
@@ -26,16 +25,22 @@ function clearTimeoutByName(name) {
 }
 
 // Hủy bỏ tất cả các timeout
-// function clearAllTimeouts() {
-//   for (const name in timeoutManager) {
-//     clearTimeout(timeoutManager[name]);
-//   }
-//   for (const name in timeoutManager) {
-//     delete timeoutManager[name];
-//   }
-// }
+function clearAllTimeouts() {
+  for (const name in timeoutManager) {
+    clearTimeoutByName(name);
+  }
+  for (const name in timeoutManager) {
+    delete timeoutManager[name];
+  }
+}
 
-const userOnlines = ["664c90e2fc6fe43e66482828", "664c9188fc6fe43e6648282b" , "6656e443d367b2c07cb92026"];
+const userOnlines = [
+    "664c90e2fc6fe43e66482828",
+    "664c9188fc6fe43e6648282b",
+    "6656e443d367b2c07cb92026",
+    "665f3057334a43323240b4de",
+    "66607312c5d098ee1a587650"
+];
 const tablesOpen = [];
 
 // Tìm ra nhân viên có thể thay thế
@@ -47,7 +52,7 @@ const userNeedChange = (currTable = null, currStaff = null) => {
 
         let obRest = null;
         User.find({ _id: { $in: userOnlines }, role: "1" })
-            .then((data) => {
+            .then(async (data) => {
                 if (data.length === 0) {
                     return resolve(null);
                 }
@@ -68,16 +73,30 @@ const userNeedChange = (currTable = null, currStaff = null) => {
                         }
                     }
                 }
-
+                console.log("Found staff" , obRest);
                 if (obRest) {
                     const currentTime = new Date();
+                    const table = await Table.findById(tablesOpen[0]);
+                    if (table.operatingTime !== "0") {
+                        
+                    }
+                    const dateTable = new Date(table.operatingTime);
+                    let timeRested = currentTime - dateTable;
+                    let timeNeedRest = 35 * 1000;
+                    if (timeRested < timeNeedRest) {
+                        addTimeout(
+                            currTable._id,
+                            () => processChangeStaff(currTable, currStaff),
+                            timeNeedRest - timeRested
+                        );
+                        return resolve(null);
+                    }
+
                     const dateObRest = new Date(obRest.timeRest);
-                    const timeRested = currentTime - dateObRest;
-                    const timeNeedRest = 15 * 1000; //MS
+                    timeRested = currentTime - dateObRest;
+                    timeNeedRest = 15 * 1000; //MS
                     console.log(timeRested);
                     if (timeRested < timeNeedRest) {
-                        console.log(timeNeedRest - timeRested);
-
                         addTimeout(
                             currTable._id,
                             () => processChangeStaff(currTable, currStaff),
@@ -123,7 +142,7 @@ export const openTable = async (req, res) => {
                 error: "No user found that matches the criteria.",
             });
         }
-        console.log("Found user:", user);
+        // console.log("Found user:", user);
 
         let dataUser = {
             special: "0",
@@ -133,7 +152,7 @@ export const openTable = async (req, res) => {
 
         try {
             const updatedUser = await updateUser(user._id, dataUser);
-            console.log("User updated successfully:", updatedUser);
+            // console.log("User updated successfully:", updatedUser);
 
             try {
                 let dataTable = {
@@ -144,7 +163,7 @@ export const openTable = async (req, res) => {
 
                 const updatedTable = await updateTable(tableId, dataTable);
                 tablesOpen.push(String(updatedTable._id));
-                console.log("Table updated successfully:", updatedTable);
+                // console.log("Table updated successfully:", updatedTable);
 
                 addTimeout(
                     tableId,
@@ -168,14 +187,15 @@ export const openTable = async (req, res) => {
 };
 
 const processChangeStaff = async (currTable = null, currStaff = null) => {
-    if (String(currTable._id) !== tablesOpen[0]) {
+    if (String(currTable?._id) !== tablesOpen[0]) {
         currTable = await Table.findById(tablesOpen[0]);
-        currStaff = await User.findById(currTable.userId);
-        console.log("dao day" , tablesOpen[0] , currTable._id);
+
+        currStaff = await User.findById(String(currTable.userId));
+        console.log("dao day", tablesOpen[0], currTable._id);
     }
 
     const user = await userNeedChange(currTable, currStaff);
-    console.log("user se change" , user);
+    console.log("user se change", user);
     console.log(timeoutManager);
 
     if (user) {
@@ -191,13 +211,13 @@ const issetStaff = async (currTable, currStaff, newStaff) => {
 
     try {
         const updatedUser = await updateUser(newStaff._id, dataUser);
-        console.log("User updated successfully:", updatedUser);
+        // console.log("User updated successfully:", updatedUser);
 
         try {
             const updatedTable = await updateTable(currTable._id, {
                 userIdNext: newStaff._id,
             });
-            console.log("Table updated successfully:", updatedTable);
+            // console.log("Table updated successfully:", updatedTable);
 
             addTimeout(
                 currTable._id,
@@ -222,7 +242,7 @@ const handleChangeStaff = async (currTable, currStaff, newStaff) => {
 
     try {
         const updatedTable = await updateTable(currTable._id, dataTable);
-        console.log("Table updated successfully:", updatedTable);
+        // console.log("Table updated successfully:", updatedTable);
 
         await updateUser(currStaff._id, {
             timeRest: currentTime,
@@ -247,3 +267,49 @@ const handleChangeStaff = async (currTable, currStaff, newStaff) => {
     }
 };
 
+export const closeTable = async (req, res) => {
+    try {
+        const tableId = req.params.id;
+
+        const currnetTime = new Date();
+
+        const table = await Table.findById(tableId);
+
+        if (!table) {
+            return res.json({ message: "Hết cứu!" });
+        }
+
+        let dataUser = {
+            timeRest: `${currnetTime}`,
+            timeWork: "0",
+        };
+
+        if (timeoutManager[tableId]) {
+            clearTimeoutByName(tableId);
+        }
+
+        if (table.userId) {
+            const updatedStaff = await updateUser(table.userId, dataUser);
+            processChangeStaff(table , updatedStaff);
+        }
+
+        if (table.userIdNext !== "0") {
+            const updatedNewStaff = await updateUser(table.userIdNext, dataUser);
+            processChangeStaff(table , updatedNewStaff);
+        }
+
+        let dataTable = {
+            status: false,
+            operatingTime: "0",
+            userId: "aaaaaaaaaaaaaaaaaaaaaaaa",
+            userIdNext: "0",
+        };
+
+        const updatedTable = await updateTable(tableId, dataTable);
+
+        res.json(updatedTable);
+    } catch (error) {
+        console.log("Error in closeTable handleTable controller", error);
+        res.status(500).json({ error: "Interver Server Error!" });
+    }
+};

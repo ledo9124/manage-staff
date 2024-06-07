@@ -1,9 +1,31 @@
-import React from 'react'
+import React, { useState } from 'react'
 import StopWatch from './StopWatch';
+import { closeTable, openTable } from '../apis/Table.jsx';
 
 const TableOne = ({ table }) => {
+    const [currTable, setCurrTable] = useState(table);
+
+    const handleClickBtn = async () => {
+        if (!currTable.status) {
+            const data = await openTable(currTable._id);
+            if (data) {
+                setCurrTable(data);
+            }
+        } else {
+            const data = await closeTable(currTable._id);
+            if (data) {
+                setCurrTable(data);
+            }
+        }
+    }
+
+    let [bg, border, btn] = ["bg-white", "border-dark-600", "btn-success"];
+    if (currTable.status) {
+        [bg, border, btn] = ["bg-sky-300", "border-sky-600", "btn-error"];
+    }
+
     return (
-        <div className="flex flex-col bg-[#fff] border border-gray-200 rounded-md">
+        <div className={`flex flex-col ${bg} ${border} rounded-md`}>
             <div className="flex flex-col justify-between flex-1 p-5">
                 <div className="flex-1 bg-[url('../../public/images/bg-1.webp')] bg-cover bg-center rounded-md">
                     <blockquote>
@@ -21,12 +43,12 @@ const TableOne = ({ table }) => {
                     <div className="flex items-center">
                         <img
                             className="flex-shrink-0 object-cover w-10 h-10 rounded-full"
-                            src={table.userId !== undefined ? table.userId.profilePic : "../../public/images/bg-1.webp"}
+                            src={currTable.userId?._id ? currTable.userId?.profilePic : "../../public/images/bg-1.webp"}
                             alt=""
                         />
                         <div className="ml-3">
                             <p className="text-base font-semibold text-gray-800 truncate text-[12px] lg:text-md">
-                                {table.userId !== undefined ? table.userId.fullName : "Empty Table"}
+                                {currTable.userId?._id ? currTable.userId?.fullName : "Empty Table"}
                             </p>
                             <p className="text-base text-gray-500 truncate text-[12px] lg:text-md">
                                 Staff
@@ -34,11 +56,16 @@ const TableOne = ({ table }) => {
                         </div>
                     </div>
                 </div>
-                <div className="mt-8 grid grid-cols-2 gap-2">
-                    <button className="btn btn-warning text-white">
-                        <StopWatch />
+                <div className="mt-8 flex justify-between items-center gap-2">
+                    {
+                        currTable.status &&
+                        (<button className="btn btn-warning text-white">
+                            <StopWatch />
+                        </button>)
+                    }
+                    <button className={`btn ${btn} text-white flex-1`} onClick={handleClickBtn}>
+                        {currTable.status ? "Close" : "Open"}
                     </button>
-                    <button className="btn btn-success text-white">Open</button>
                     {/* <button className="btn btn-error">Close</button> */}
 
                 </div>
