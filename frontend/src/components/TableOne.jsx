@@ -56,6 +56,7 @@ const TableOne = ({ table }) => {
                         </div>
                     </div>
                 </div>
+<<<<<<< HEAD
                 <div className="mt-8 flex justify-between items-center gap-2">
                     {
                         currTable.status &&
@@ -65,6 +66,11 @@ const TableOne = ({ table }) => {
                     }
                     <button className={`btn ${btn} text-white flex-1`} onClick={handleClickBtn}>
                         {currTable.status ? "Close" : "Open"}
+=======
+                <div className="mt-8 grid grid-cols-2 gap-2">
+                    <button className="btn btn-warning text-white p-1 sm:p-2">
+                        <StopWatch />
+>>>>>>> f462d02fd0f33142b3b5f553cbc98f5d4f991136
                     </button>
                     {/* <button className="btn btn-error">Close</button> */}
 
